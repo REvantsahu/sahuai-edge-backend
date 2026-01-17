@@ -1,3 +1,13 @@
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+export async function onRequestOptions() {
+  return new Response(null, {
+    headers: CORS_HEADERS,
+  });
+}
 export async function onRequestPost({ request, env }) {
   const { message } = await request.json();
 
@@ -91,6 +101,7 @@ export async function onRequestPost({ request, env }) {
 
   return new Response(stream, {
     headers: {
+      CORS_HEADERS,
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "no-cache"
     }
