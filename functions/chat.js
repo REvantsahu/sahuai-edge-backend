@@ -15,12 +15,11 @@ export async function onRequestPost({ request, env }) {
     return new Response("Invalid message", { status: 400 });
   }
 
-  const KEYS = env.OPENROUTER_KEYS.split(",");
+  const KEYS = [env.OPENROUTER_KEYS.split(",")[0]];
+
   const MODELS = [
     "meta-llama/llama-3.1-8b-instruct",
-    "deepseek/deepseek-chat",
-    "google/gemma-2-9b-it",
-    "mistralai/mixtral-8x7b-instruct"
+
   ];
 
   const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
