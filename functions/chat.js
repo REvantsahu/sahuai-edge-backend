@@ -22,11 +22,12 @@ export async function onRequestPost({ request, env }) {
 
   // 🧠 MODEL FALLBACK ORDER (guest-safe)
   const MODELS = [
-    "deepseek/deepseek-chat",
-    "meta-llama/llama-3.1-8b-instruct",
-    "google/gemma-2-9b-it",
-    "mistralai/mixtral-8x7b-instruct"
-  ];
+  "meta-llama/llama-3.1-8b-instruct",
+  "deepseek/deepseek-chat",
+  "google/gemma-2-9b-it",
+  "mistralai/mixtral-8x7b-instruct"
+];
+
 
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
@@ -47,10 +48,13 @@ export async function onRequestPost({ request, env }) {
               {
                 method: "POST",
                 headers: {
-                  "Authorization": `Bearer ${key}`,
-                  "Content-Type": "application/json",
-                  "HTTP-Referer": "https://sahuai.pages.dev"
-                },
+  "Authorization": `Bearer ${key}`,
+  "Content-Type": "application/json",
+  "HTTP-Referer": "https://sahuai-edge-backend.pages.dev",
+  "X-Title": "SahuAI"
+}
+,
+                
                 body: JSON.stringify({
                   model,
                   stream: true,
