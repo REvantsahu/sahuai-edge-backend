@@ -3,6 +3,8 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
+let sentAnyData = false;
+
 export async function onRequestOptions() {
   return new Response(null, {
     headers: CORS_HEADERS,
@@ -65,6 +67,7 @@ export async function onRequestPost({ request, env }) {
             );
 
             if (!response.ok) throw new Error("Model failed");
+            if (!response.body) throw new Error("No response body");
 
             const reader = response.body.getReader();
 
@@ -83,7 +86,11 @@ export async function onRequestPost({ request, env }) {
                 try {
                   const json = JSON.parse(data);
                   const text = json.choices[0]?.delta?.content;
-                  if (text) controller.enqueue(encoder.encode(text));
+                  if (text) {
+  sentAnyData = true;
+  controller.enqueue(encoder.encode(text));
+}
+
                 } catch {}
               }
             }
@@ -95,15 +102,22 @@ export async function onRequestPost({ request, env }) {
         }
       }
 
-      controller.close();
+      if (!sentAnyData) {
+  controller.enqueue(
+    encoder.encode("<div>⚠️ AI busy. Please try again.</div>")
+  );
+}
+controller.close();
+
     }
   });
 
-  return new Response(stream, {
-    headers: {
-      CORS_HEADERS,
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "no-cache"
-    }
-  });
+return new Response(stream, {
+  headers: {
+    ...CORS_HEADERS,
+    "Content-Type": "text/html; charset=utf-8",
+    "Cache-Control": "no-cache"
+  }
+});
+
 }
