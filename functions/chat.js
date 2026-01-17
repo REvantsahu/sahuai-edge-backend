@@ -52,6 +52,12 @@ export async function onRequestPost({ request, env }) {
     const text =
       json?.candidates?.[0]?.content?.parts?.[0]?.text ||
       "<div>⚠️ No response from Gemini.</div>";
+    if (!env.GEMINI_API_KEY) {
+  return new Response(
+    "<div>❌ GEMINI_API_KEY IS UNDEFINED</div>",
+    { headers: { "Content-Type": "text/html" } }
+  );
+}
 
     return new Response(text, {
       headers: {
