@@ -9,86 +9,63 @@ export async function onRequestOptions() {
 }
 
 export async function onRequestPost({ request, env }) {
-  const { message } = await request.json();
+  try {
+    const { message } = await request.json();
 
-  if (!message || message.length > 4000) {
-    return new Response("Invalid message", { status: 400 });
-  }
+    if (!message || message.length > 4000) {
+      return new Response("Invalid message", { status: 400 });
+    }
 
-  const KEYS = [env.OPENROUTER_KEYS.split(",")[0]];
-
-  const MODELS = [
-    "meta-llama/llama-3.1-8b-instruct",
-
-  ];
-
-  const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
-  const encoder = new TextEncoder();
-
-  const stream = new ReadableStream({
-    async start(controller) {
-      let success = false;
-
-      outer:
-      for (const key of shuffle([...KEYS])) {
-        for (const model of shuffle([...MODELS])) {
-          try {
-            const response = await fetch(
-              "https://openrouter.ai/api/v1/chat/completions",
-              {
-                method: "POST",
-                headers: {
-                  "Authorization": `Bearer ${key}`,
-                  "Content-Type": "application/json",
-                  "HTTP-Referer": "https://sahuai-edge-backend.pages.dev",
-                  "X-Title": "SahuAI"
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" +
+        env.GEMINI_API_KEY,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text:
+                    "Reply ONLY in clean HTML. Chill bro vibes.\n\n" +
+                    message,
                 },
-                body: JSON.stringify({
-                  model,
-                  stream: false,
-                  messages: [
-                    {
-                      role: "system",
-                      content:
-                        "You are SahuAI Lite. Reply ONLY in clean HTML. Chill bro vibes."
-                    },
-                    { role: "user", content: message }
-                  ]
-                })
-              }
-            );
-
-            if (!response.ok) throw new Error("Model failed");
-
-            const json = await response.json();
-            const text = json?.choices?.[0]?.message?.content;
-
-            if (text) {
-              controller.enqueue(encoder.encode(text));
-              success = true;
-              break outer;
-            }
-          } catch (e) {
-            continue;
-          }
-        }
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 1024,
+          },
+        }),
       }
+    );
 
-      if (!success) {
-        controller.enqueue(
-          encoder.encode("<div>⚠️ AI busy. Please try again.</div>")
-        );
-      }
-
-      controller.close();
+    if (!response.ok) {
+      throw new Error("Gemini API failed");
     }
-  });
 
-  return new Response(stream, {
-    headers: {
-      ...CORS_HEADERS,
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "no-cache"
-    }
-  });
+    const json = await response.json();
+
+    const text =
+      json?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "<div>⚠️ No response from Gemini.</div>";
+
+    return new Response(text, {
+      headers: {
+        ...CORS_HEADERS,
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-cache",
+      },
+    });
+  } catch (err) {
+    return new Response("<div>❌ Gemini error. Retry.</div>", {
+      headers: {
+        ...CORS_HEADERS,
+        "Content-Type": "text/html; charset=utf-8",
+      },
+    });
+  }
 }
